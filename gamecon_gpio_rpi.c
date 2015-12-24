@@ -464,7 +464,7 @@ static void gc_nes_process_packet(struct gc *gc)
 	struct gc_pad *pad;
 	struct input_dev *dev, *dev2;
 	int i, j, s, len;
-	unsigned char id1, id2;
+	unsigned char id1, id2, fs_connected;
 	char x_rel, y_rel;
 
 	len = gc->pad_count[GC_SNESMOUSE] ? GC_SNESMOUSE_LENGTH :
@@ -559,7 +559,7 @@ static void gc_nes_process_packet(struct gc *gc)
 			
 			dev2 = pad->dev2;
 				
-			// Report first byte
+			/* Report first byte (first NES pad). */
 			input_report_abs(dev, ABS_X, !(s & data[6]) - !(s & data[7]));
 			input_report_abs(dev, ABS_Y, !(s & data[4]) - !(s & data[5]));
 			
@@ -567,15 +567,20 @@ static void gc_nes_process_packet(struct gc *gc)
 				input_report_key(dev, gc_snes_btn[j], s & data[gc_nes_bytes[j]]);
 			input_sync(dev);
 			
-			id1 = !(s & data[16]) && !(s & data[17]) && !(s & data[18]) && (s & data[19]) && !(s & data[20]) && !(s & data[21]) && !(s & data[22]) && !(s & data[23]);
-			id2 = !(s & data[16]) && !(s & data[17]) && (s & data[18]) && !(s & data[19]) && !(s & data[20]) && !(s & data[21]) && !(s & data[22]) && !(s & data[23]);
+			/* Determine if a NES Four Score ID code is available in the 3rd byte. */
+			fs_connected = ( !(s & data[16]) &&	!(s & data[17]) && !(s & data[18]) &&
+							  (s & data[19]) &&	!(s & data[20]) && !(s & data[21]) &&
+							 !(s & data[22]) &&	!(s & data[23]) ) ||
+								( !(s & data[16]) && !(s & data[17]) &&  (s & data[18]) &&
+								  !(s & data[19]) && !(s & data[20]) && !(s & data[21]) &&
+								  !(s & data[22]) && !(s & data[23]) );
 			
-			/* Check if FourScore is in 4-player mdoe */
-			if(id1 || id2) {
+			/* Check if the NES Four Score is connected and the toggle switch is set to 4-player mdoe. */
+			if(fs_connected) {
 				if(pad->player_mode == 2)
 					pad->player_mode = 4;
 				
-				// Report second byte
+				/* Report second byte (second NES pad). */
 				input_report_abs(dev2, ABS_X, !(s & data[14]) - !(s & data[15]));
 				input_report_abs(dev2, ABS_Y, !(s & data[12]) - !(s & data[13]));
 				
@@ -583,10 +588,12 @@ static void gc_nes_process_packet(struct gc *gc)
 					input_report_key(dev2, gc_snes_btn[j], s & data[gc_nes_bytes[j] + 8]);
 				}
 				input_sync(dev2);
+				
 			} else if(pad->player_mode == 4) {
+				/* Either the toggle switch on the NES Four Score is set to 2-player mode or it is not connected.  */
 				pad->player_mode = 2;
 				
-				// NES Four Score set to 2 player mode. Clear third and fourth NES pad.
+				/* Clear second NES pad. */
 				input_report_abs(dev2, ABS_X, 0);
 				input_report_abs(dev2, ABS_Y, 0);
 				
