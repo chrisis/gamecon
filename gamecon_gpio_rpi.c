@@ -468,9 +468,6 @@ static void gc_nes_process_packet(struct gc *gc)
 	char x_rel, y_rel;
 
 	len = gc->pad_count[GC_SNESMOUSE] ? GC_SNESMOUSE_LENGTH :
-			(gc->pad_count[GC_SNES] ? GC_SNES_LENGTH : GC_NES_LENGTH);
-
-	len = gc->pad_count[GC_SNESMOUSE] ?	GC_SNESMOUSE_LENGTH :
 			(gc->pad_count[GC_NESFOURSCORE] ? GC_NESFOURSCORE_LENGTH :
 			(gc->pad_count[GC_SNES] ? GC_SNES_LENGTH : GC_NES_LENGTH));
 	
